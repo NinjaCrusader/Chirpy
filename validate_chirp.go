@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"slices"
+	"strings"
 )
 
 func (cfg *apiConfig) handlerValidate(w http.ResponseWriter, r *http.Request) {
@@ -12,8 +14,8 @@ func (cfg *apiConfig) handlerValidate(w http.ResponseWriter, r *http.Request) {
 		Body string `json:"body"`
 	}
 
-	type isValid struct {
-		Valid bool `json:"valid"`
+	type cleaned struct {
+		CleanedBody string `json:"cleaned_body"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -30,8 +32,10 @@ func (cfg *apiConfig) handlerValidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := isValid{
-		Valid: true,
+	cleanedParams := removeBadWords(params.Body)
+
+	res := cleaned{
+		CleanedBody: cleanedParams,
 	}
 
 	respondWithJSON(w, 200, res)
@@ -72,4 +76,23 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(dat)
+}
+
+func removeBadWords(s string) string {
+
+	bannedWords := []string{"kerfuffle", "sharbert", "fornax"}
+
+	split := strings.Split(s, " ")
+
+	for i := 0; i < len(split); i++ {
+		copy := split[i]
+		if slices.Contains(bannedWords, strings.ToLower(copy)) {
+			split[i] = "****"
+			continue
+		}
+	}
+
+	final := strings.Join(split, " ")
+
+	return final
 }
