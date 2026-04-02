@@ -63,3 +63,31 @@ func (cfg *apiConfig) handlerChirp(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusCreated, createdResult)
 }
+
+func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
+
+	final := []result{}
+
+	chirps, err := cfg.db.GetUsers(r.Context())
+	if err != nil {
+		log.Printf("there was an error getting chirps from the db: %v\n")
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		return
+	}
+
+	for i := 0; i < len(chirps); i++ {
+		row := chirps[i]
+		chirp := result{
+			ID:        row.ID,
+			CreatedAt: row.CreatedAt,
+			UpdatedAt: row.UpdateAt,
+			Body:      row.Body,
+			UserID:    row.UserID,
+		}
+
+		final = append(final, chirp)
+	}
+
+	respondWithJSON(w, http.StatusOK, final)
+
+}

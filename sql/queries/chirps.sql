@@ -8,3 +8,8 @@ VALUES (
     $2
 )
 returning *;
+
+-- name: GetUsers :many
+SELECT * 
+FROM chirp
+ORDER BY created_at ASC;
