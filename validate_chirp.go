@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"slices"
-	"strings"
 )
 
 func (cfg *apiConfig) handlerValidate(w http.ResponseWriter, r *http.Request) {
@@ -40,59 +38,4 @@ func (cfg *apiConfig) handlerValidate(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, 200, res)
 
-}
-
-func respondWithError(w http.ResponseWriter, code int, msg string) {
-
-	type returnVals struct {
-		Error string `json:"error"`
-	}
-
-	respBody := returnVals{
-		Error: msg,
-	}
-
-	dat, err := json.Marshal(respBody)
-	if err != nil {
-		log.Printf("Error marshalling JSON: %v\n", err)
-		w.WriteHeader(500)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(dat)
-}
-
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-
-	dat, err := json.Marshal(payload)
-	if err != nil {
-		log.Printf("Error marshalling response JSON: %v\n", err)
-		w.WriteHeader(500)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(dat)
-}
-
-func removeBadWords(s string) string {
-
-	bannedWords := []string{"kerfuffle", "sharbert", "fornax"}
-
-	split := strings.Split(s, " ")
-
-	for i := 0; i < len(split); i++ {
-		copy := split[i]
-		if slices.Contains(bannedWords, strings.ToLower(copy)) {
-			split[i] = "****"
-			continue
-		}
-	}
-
-	final := strings.Join(split, " ")
-
-	return final
 }
