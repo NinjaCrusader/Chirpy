@@ -4,24 +4,13 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"time"
 
-	"github.com/google/uuid"
+	"github.com/NinjaCrusader/Chirpy/internal/auth"
+	"github.com/NinjaCrusader/Chirpy/internal/database"
 	"github.com/lib/pq"
 )
 
-type User struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-}
-
 func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
-
-	type requestParams struct {
-		Email string `json:"email"`
-	}
 
 	decoder := json.NewDecoder(r.Body)
 	params := requestParams{}
@@ -32,7 +21,19 @@ func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err := cfg.db.CreateUser(r.Context(), params.Email)
+	hashed, err := auth.HashPassword(params.Password)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		log.Printf("something went wrong while hashing the password: %v\n", err)
+		return
+	}
+
+	createUserParam := database.CreateUserParams{
+		Email:          params.Email,
+		HashedPassword: hashed,
+	}
+
+	user, err := cfg.db.CreateUser(r.Context(), createUserParam)
 	if err != nil {
 		if dbErr, ok := err.(*pq.Error); ok {
 			respondWithError(w, http.StatusInternalServerError, "Something went wrong")
