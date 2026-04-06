@@ -68,9 +68,9 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 
 	final := []result{}
 
-	chirps, err := cfg.db.GetUsers(r.Context())
+	chirps, err := cfg.db.GetChirps(r.Context())
 	if err != nil {
-		log.Printf("there was an error getting chirps from the db: %v\n")
+		log.Printf("there was an error getting chirps from the db: %v\n", err)
 		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
@@ -90,4 +90,31 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusOK, final)
 
+}
+
+func (cfg *apiConfig) handlerGetSingleChirp(w http.ResponseWriter, r *http.Request) {
+
+	convert, err := uuid.Parse(r.PathValue("chirpID"))
+	if err != nil {
+		respondWithJSON(w, http.StatusInternalServerError, "Something went wrong")
+		log.Printf("there was an issue with converting the chirpID to UUID: %v\n", err)
+		return
+	}
+
+	chirp, err := cfg.db.GetChirp(r.Context(), convert)
+	if err != nil {
+		respondWithJSON(w, http.StatusNotFound, "Chirp not found")
+		log.Printf("there was an error while getting the chirp from the db: %v\n", err)
+		return
+	}
+
+	res := result{
+		ID:        chirp.ID,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdateAt,
+		Body:      chirp.Body,
+		UserID:    chirp.UserID,
+	}
+
+	respondWithJSON(w, http.StatusOK, res)
 }

@@ -9,7 +9,12 @@ VALUES (
 )
 returning *;
 
--- name: GetUsers :many
+-- name: GetChirps :many
 SELECT * 
 FROM chirp
 ORDER BY created_at ASC;
+
+-- name: GetChirp :one
+SELECT *
+FROM chirp
+WHERE id = $1;
