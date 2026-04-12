@@ -3,7 +3,6 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -12,6 +11,7 @@ import (
 
 func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
 
+	token := []byte(tokenSecret)
 	newJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    "chirpy-access",
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
@@ -19,15 +19,7 @@ func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (str
 		Subject:   userID.String(),
 	})
 
-	token := []string{tokenSecret}
-
-	signed, err := newJWT.SignedString(token)
-	if err != nil {
-		log.Printf("there was an error signing jwt: %v\n", err)
-		return "", err
-	}
-
-	return signed, nil
+	return newJWT.SignedString(token)
 }
 
 func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
