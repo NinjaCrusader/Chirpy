@@ -16,6 +16,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	cfgPlatform    string
+	tokenSecret    string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -39,6 +40,11 @@ func main() {
 		log.Fatal("Platform is not set")
 	}
 
+	secret := os.Getenv("SECRET")
+	if secret == "" {
+		log.Fatal("Secret is not set")
+	}
+
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Printf("there was an issue opening the db connection: %v\n", err)
@@ -50,6 +56,7 @@ func main() {
 	apiCfg := apiConfig{
 		db:          dbQueries,
 		cfgPlatform: platform,
+		tokenSecret: secret,
 	}
 
 	mux := http.NewServeMux()

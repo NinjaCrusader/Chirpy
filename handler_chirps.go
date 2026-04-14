@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/NinjaCrusader/Chirpy/internal/auth"
 	"github.com/NinjaCrusader/Chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -34,6 +35,20 @@ func (cfg *apiConfig) handlerChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		log.Printf("there was an error with getting the BearerToken: %v\n", err)
+		return
+	}
+
+	validatedToken, validErr := auth.ValidateJWT(token, cfg.tokenSecret)
+	if validErr != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid Token")
+		log.Printf("there was an issue validating the token: %v\n", validErr)
+		return
+	}
+
 	if len(chirp.Body) > 140 {
 		respondWithError(w, http.StatusInternalServerError, "Chirp is too long")
 		return
@@ -43,7 +58,7 @@ func (cfg *apiConfig) handlerChirp(w http.ResponseWriter, r *http.Request) {
 
 	insertChripParam := database.InsertChirpParams{
 		Body:   cleaned,
-		UserID: chirp.UserID,
+		UserID: validatedToken,
 	}
 
 	insertChirp, err := cfg.db.InsertChirp(r.Context(), insertChripParam)

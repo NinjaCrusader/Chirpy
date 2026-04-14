@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/NinjaCrusader/Chirpy/internal/auth"
 )
@@ -33,11 +34,27 @@ func (cfg *apiConfig) handlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if params.Expires <= 0 {
+		params.Expires = 3600
+	} else if params.Expires >= 3600 {
+		params.Expires = 3600
+	}
+
+	expiresIn := time.Duration(params.Expires) * time.Second
+
+	createToken, err := auth.MakeJWT(user.ID, cfg.tokenSecret, expiresIn)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		log.Printf("there was an error creating the JWT: %v\n", err)
+		return
+	}
+
 	res := User{
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
+		Token:     createToken,
 	}
 
 	respondWithJSON(w, http.StatusOK, res)
