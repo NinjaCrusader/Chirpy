@@ -1,15 +1,41 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/alexedwards/argon2id"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
+
+func HashPassword(password string) (string, error) {
+
+	hash, err := argon2id.CreateHash(password, argon2id.DefaultParams)
+	if err != nil {
+		log.Printf("there was something wrong with creating the password hash: %v\n", err)
+		return "", err
+	}
+
+	return hash, err
+}
+
+func CheckPasswordHash(password, hash string) (bool, error) {
+
+	valid, err := argon2id.ComparePasswordAndHash(password, hash)
+	if err != nil {
+		log.Printf("there was an error with comparing the pass and hash: %v\n", err)
+		return false, err
+	}
+
+	return valid, err
+}
 
 func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
 
@@ -68,4 +94,18 @@ func GetBearerToken(headers http.Header) (string, error) {
 	token := headerSplice[1]
 
 	return token, nil
+}
+
+func MakeRereshToken() string {
+
+	b := []byte{}
+	_, err := rand.Read(b)
+	if err != nil {
+		log.Printf("there was a problem creating the token: %v\n", err)
+		return ""
+	}
+
+	convert := hex.EncodeToString(b)
+
+	return convert
 }
