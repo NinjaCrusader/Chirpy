@@ -37,7 +37,7 @@ func (cfg *apiConfig) handlerChirp(w http.ResponseWriter, r *http.Request) {
 
 	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		respondWithError(w, http.StatusUnauthorized, "Something went wrong")
 		log.Printf("there was an error with getting the BearerToken: %v\n", err)
 		return
 	}

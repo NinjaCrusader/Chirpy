@@ -37,13 +37,13 @@ func CheckPasswordHash(password, hash string) (bool, error) {
 	return valid, err
 }
 
-func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
+func MakeJWT(userID uuid.UUID, tokenSecret string) (string, error) {
 
 	token := []byte(tokenSecret)
 	newJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    "chirpy-access",
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(expiresIn)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Hour)),
 		Subject:   userID.String(),
 	})
 
@@ -96,9 +96,9 @@ func GetBearerToken(headers http.Header) (string, error) {
 	return token, nil
 }
 
-func MakeRereshToken() string {
+func MakeRefreshToken() string {
 
-	b := []byte{}
+	b := make([]byte, 32)
 	_, err := rand.Read(b)
 	if err != nil {
 		log.Printf("there was a problem creating the token: %v\n", err)

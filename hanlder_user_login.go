@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/NinjaCrusader/Chirpy/internal/auth"
+	"github.com/NinjaCrusader/Chirpy/internal/database"
 )
 
 func (cfg *apiConfig) handlerUserLogin(w http.ResponseWriter, r *http.Request) {
@@ -34,22 +35,26 @@ func (cfg *apiConfig) handlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if params.Expires <= 0 {
-		params.Expires = 3600
-	} else if params.Expires >= 3600 {
-		params.Expires = 3600
-	}
-
-	expiresIn := time.Duration(params.Expires) * time.Second
-
-	createToken, err := auth.MakeJWT(user.ID, cfg.tokenSecret, expiresIn)
+	createToken, err := auth.MakeJWT(user.ID, cfg.tokenSecret)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
 		log.Printf("there was an error creating the JWT: %v\n", err)
 		return
 	}
 
-	refresh := auth.MakeRereshToken()
+	refresh := auth.MakeRefreshToken()
+	refreshParams := database.InsertRefreshTokenParams{
+		Token:     refresh,
+		UserID:    user.ID,
+		ExpiresAt: time.Now().Add(60 * 24 * time.Hour),
+	}
+
+	refreshToken, err := cfg.db.InsertRefreshToken(r.Context(), refreshParams)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		log.Printf("something went wrong inserting the refresh token: %v\n", err)
+		return
+	}
 
 	res := User{
 		ID:           user.ID,
@@ -57,7 +62,7 @@ func (cfg *apiConfig) handlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:    user.UpdatedAt,
 		Email:        user.Email,
 		Token:        createToken,
-		RefreshToken: refresh,
+		RefreshToken: refreshToken.Token,
 	}
 
 	respondWithJSON(w, http.StatusOK, res)
