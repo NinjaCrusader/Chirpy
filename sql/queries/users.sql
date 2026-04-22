@@ -21,3 +21,9 @@ WHERE id = $1;
 SELECT *
 FROM users
 WHERE email = $1;
+
+-- name: UpdateUserPass :one
+UPDATE users
+SET updated_at = NOW(), email = $1, hashed_password = $2
+WHERE id = $3
+RETURNING *;
