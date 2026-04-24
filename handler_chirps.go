@@ -133,3 +133,48 @@ func (cfg *apiConfig) handlerGetSingleChirp(w http.ResponseWriter, r *http.Reque
 
 	respondWithJSON(w, http.StatusOK, res)
 }
+
+func (cfg *apiConfig) handlerDeleteChrip(w http.ResponseWriter, r *http.Request) {
+
+	userToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Something went wrong")
+		log.Printf("there was an issue getting the auth token when deleting the chirp: %v\n", err)
+		return
+	}
+
+	userID, err := auth.ValidateJWT(userToken, cfg.tokenSecret)
+	if err != nil {
+		respondWithJSON(w, http.StatusUnauthorized, "Something went wrong")
+		log.Printf("there was an issue validating the token when deleting the chirp: %v\n", err)
+		return
+	}
+
+	chirpID, err := uuid.Parse(r.PathValue("chirpID"))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
+		log.Printf("there was an error while trying to get the chirp ID to delete: %v\n", err)
+		return
+	}
+
+	chirp, err := cfg.db.GetChirp(r.Context(), chirpID)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Something went wrong")
+		log.Printf("there was an issue with grabbing the chirp from the db by ID: %v\n", err)
+		return
+	}
+
+	if userID != chirp.UserID {
+		respondWithError(w, http.StatusForbidden, "Something went wrong")
+		log.Printf("the user ID did not match the chirp User ID. Access was denied.")
+		return
+	}
+
+	if err := cfg.db.DeleteChirp(r.Context(), chirpID); err != nil {
+		respondWithError(w, http.StatusNotFound, "Something went wrong")
+		log.Printf("there was an error while trying to delete the chirp with the chirpID: %v\n", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
