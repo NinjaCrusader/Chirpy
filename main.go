@@ -17,6 +17,7 @@ type apiConfig struct {
 	db             *database.Queries
 	cfgPlatform    string
 	tokenSecret    string
+	polkaAPI       string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -45,6 +46,11 @@ func main() {
 		log.Fatal("Secret is not set")
 	}
 
+	polkaAPIKey := os.Getenv("POLKA_KEY")
+	if secret == "" {
+		log.Fatal("Polka api is not set")
+	}
+
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Printf("there was an issue opening the db connection: %v\n", err)
@@ -57,6 +63,7 @@ func main() {
 		db:          dbQueries,
 		cfgPlatform: platform,
 		tokenSecret: secret,
+		polkaAPI:    polkaAPIKey,
 	}
 
 	mux := http.NewServeMux()

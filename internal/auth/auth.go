@@ -109,3 +109,16 @@ func MakeRefreshToken() string {
 
 	return convert
 }
+
+func GetAPIKey(headers http.Header) (string, error) {
+
+	headerData := headers.Get("Authorization")
+	headerSplice := strings.Fields(headerData)
+	if (len(headerSplice) > 2) || (len(headerData) <= 1) {
+		return "", errors.New("invalid polka API key")
+	}
+
+	key := headerSplice[1]
+
+	return key, nil
+}

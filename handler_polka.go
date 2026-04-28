@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/NinjaCrusader/Chirpy/internal/auth"
 	"github.com/google/uuid"
 )
 
@@ -21,10 +22,22 @@ type polkaWebhookRequest struct {
 
 func (cfg *apiConfig) handlerPolkaWebhook(w http.ResponseWriter, r *http.Request) {
 
+	authCheck, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Something went wrong")
+		log.Printf("there was an error validating the api key: %v\n", err)
+		return
+	}
+
+	if authCheck != cfg.polkaAPI {
+		respondWithError(w, http.StatusUnauthorized, "Something went wrong")
+		log.Printf("the api token did not match the polka api key: %v\n", err)
+		return
+	}
+
 	webhook := polkaWebhookRequest{}
 	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&webhook)
-	if err != nil {
+	if err := decoder.Decode(&webhook); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Something went wrong")
 		log.Printf("there was an error while trying to decode the polka webhook request: %v\n", err)
 		return
