@@ -83,11 +83,28 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 
 	final := []result{}
 
-	chirps, err := cfg.db.GetChirps(r.Context())
-	if err != nil {
-		log.Printf("there was an error getting chirps from the db: %v\n", err)
-		respondWithError(w, http.StatusInternalServerError, "Something went wrong")
-		return
+	var chirps []database.Chirp
+	var err error
+
+	authorID := r.URL.Query().Get("author_id")
+	if authorID == "" {
+		if chirps, err = cfg.db.GetChirps(r.Context()); err != nil {
+			log.Printf("there was an error getting chirps from the db: %v\n", err)
+			respondWithError(w, http.StatusInternalServerError, "Something went wrong")
+			return
+		}
+	} else {
+		parsedAuthorID, err := uuid.Parse(authorID)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "Something went wrong")
+			log.Printf("there was an issue parsing the author id in get chirps: %v\n", err)
+			return
+		}
+		if chirps, err = cfg.db.GetChirpByAuthor(r.Context(), parsedAuthorID); err != nil {
+			log.Printf("there was an error getting chirps from the db: %v\n", err)
+			respondWithError(w, http.StatusInternalServerError, "Something went wrong")
+			return
+		}
 	}
 
 	for i := 0; i < len(chirps); i++ {
